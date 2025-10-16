@@ -1,49 +1,10 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Mere Passing of Fire</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#ff4500">
     <style>
         body {
@@ -83,6 +44,10 @@
             font-size: 16px;
             cursor: pointer;
             border-radius: 5px;
+            margin: 10px;
+        }
+        #install-btn {
+            background: #ff8c00;
         }
         @media (max-width: 600px) {
             body { padding: 10px; }
@@ -100,16 +65,57 @@
             <div class="flame"></div>
         </div>
         <button id="ignite-btn">Ignite the Pass</button>
+        <button id="install-btn">Install App</button>
     </main>
     <script>
+        // Store the install prompt event
+        let deferredPrompt;
+
+        // Listen for beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt event fired');
+            e.preventDefault(); // Prevent default browser prompt
+            deferredPrompt = e; // Save the event
+        });
+
+        // Handle install button click
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Show install prompt
+                deferredPrompt.prompt();
+                console.log('Install prompt shown');
+                // Wait for user response
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null; // Clear prompt
+            } else {
+                alert('Installation is not available. Ensure you are using a compatible browser (e.g., Chrome or Edge) and the site is served over HTTPS.');
+                console.log('No deferredPrompt available; installation not possible');
+            }
+        });
+
+        // Ignite button functionality
         document.getElementById('ignite-btn').addEventListener('click', () => {
             const p = document.querySelector('p');
             p.textContent = 'The fire has passed—now it burns in you.';
             p.style.color = '#ff6600';
         });
+
         // Register service worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
+            navigator.serviceWorker.register('./sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        } else {
+            console.log('Service Worker not supported in this browser');
         }
     </script>
 </body>
