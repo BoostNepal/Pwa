@@ -2,13 +2,13 @@
     "name": "The Mere Passing of Fire",
     "short_name": "Passing Fire",
     "description": "A meditative site on the passing of fire",
-    "start_url": "/",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#000",
     "theme_color": "#ff4500",
     "icons": [
         {
-            "src": "images/icon-512.png",
+            "src": "./images/icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
         }
